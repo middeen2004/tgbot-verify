@@ -2,7 +2,7 @@
 import logging
 from typing import Optional
 
-from telegram import Update
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 
 from config import ADMIN_USER_ID
@@ -70,6 +70,36 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: D
     user_id = update.effective_user.id
     is_admin = user_id == ADMIN_USER_ID
     await update.message.reply_text(get_help_message(is_admin))
+
+
+async def service_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
+    """List available verification services with quick-insert buttons."""
+    if await reject_group_command(update):
+        return
+
+    services = [
+        ("Gemini One Pro", "/verify", "Teacher"),
+        ("ChatGPT K12", "/verify2", "Teacher"),
+        ("Spotify Student", "/verify3", "Student"),
+        ("Bolt.new Teacher", "/verify4", "Teacher"),
+        ("YouTube Student (beta)", "/verify5", "Student"),
+        ("Perplexity Pro", "/verify6", "Student"),
+    ]
+
+    rows = []
+    for name, cmd, svc_type in services:
+        rows.append([
+            InlineKeyboardButton(
+                f"{name} ({svc_type})", switch_inline_query_current_chat=f"{cmd} "
+            )
+        ])
+
+    keyboard = InlineKeyboardMarkup(rows)
+    lines = ["Available services (tap a button to pre-fill the command):"]
+    for name, cmd, svc_type in services:
+        lines.append(f"- {name} [{svc_type}] — {cmd}")
+
+    await update.message.reply_text("\n".join(lines), reply_markup=keyboard)
 
 
 async def balance_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):

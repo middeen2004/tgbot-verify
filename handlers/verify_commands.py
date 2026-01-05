@@ -15,7 +15,14 @@ from k12.sheerid_verifier import SheerIDVerifier as K12Verifier
 from spotify.sheerid_verifier import SheerIDVerifier as SpotifyVerifier
 from youtube.sheerid_verifier import SheerIDVerifier as YouTubeVerifier
 from Boltnew.sheerid_verifier import SheerIDVerifier as BoltnewVerifier
+from perplexity.sheerid_verifier import SheerIDVerifier as PerplexityVerifier
 from utils.messages import get_insufficient_balance_message, get_verify_usage_message
+from handlers.pending_sessions import (
+    set_pending,
+    get_pending,
+    clear_pending,
+    ttl_remaining,
+)
 
 # Try to import concurrency controls; fall back to a basic implementation if unavailable
 try:
@@ -39,6 +46,19 @@ async def verify_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db:
     if not db.user_exists(user_id):
         await update.message.reply_text("Please register first with /start.")
         return
+
+    # If no link provided, start a 5-minute session and prompt for the URL
+    if not context.args:
+        set_pending(user_id, "verify")
+        await update.message.reply_text(
+            "Gemini One Pro verification\n\n"
+            "Send your SheerID link within 5 minutes.\n"
+            "Example: https://services.sheerid.com/verify/<programId>/?verificationId=<id>"
+        )
+        return
+
+    # Clear any stale pending state once a URL is supplied
+    clear_pending(user_id)
 
     if not context.args:
         await update.message.reply_text(
@@ -117,6 +137,17 @@ async def verify2_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db
         return
 
     if not context.args:
+        set_pending(user_id, "verify2")
+        await update.message.reply_text(
+            "ChatGPT Teacher K12 verification\n\n"
+            "Send your SheerID link within 5 minutes.\n"
+            "Example: https://services.sheerid.com/verify/<programId>/?verificationId=<id>"
+        )
+        return
+
+    clear_pending(user_id)
+
+    if not context.args:
         await update.message.reply_text(
             get_verify_usage_message("/verify2", "ChatGPT Teacher K12")
         )
@@ -191,6 +222,17 @@ async def verify3_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db
     if not db.user_exists(user_id):
         await update.message.reply_text("Please register first with /start.")
         return
+
+    if not context.args:
+        set_pending(user_id, "verify3")
+        await update.message.reply_text(
+            "Spotify Student verification\n\n"
+            "Send your SheerID link within 5 minutes.\n"
+            "Example: https://services.sheerid.com/verify/<programId>/?verificationId=<id>"
+        )
+        return
+
+    clear_pending(user_id)
 
     if not context.args:
         await update.message.reply_text(
@@ -274,6 +316,17 @@ async def verify4_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db
     if not db.user_exists(user_id):
         await update.message.reply_text("Please register first with /start.")
         return
+
+    if not context.args:
+        set_pending(user_id, "verify4")
+        await update.message.reply_text(
+            "Bolt.new Teacher verification\n\n"
+            "Send your Bolt.new SheerID link within 5 minutes.\n"
+            "It should contain verificationId or externalUserId."
+        )
+        return
+
+    clear_pending(user_id)
 
     if not context.args:
         await update.message.reply_text(
@@ -463,6 +516,17 @@ async def verify5_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db
         return
 
     if not context.args:
+        set_pending(user_id, "verify5")
+        await update.message.reply_text(
+            "YouTube Premium Student verification (beta)\n\n"
+            "Send your constructed SheerID link within 5 minutes.\n"
+            "Format: https://services.sheerid.com/verify/<programId>/?verificationId=<id>"
+        )
+        return
+
+    clear_pending(user_id)
+
+    if not context.args:
         await update.message.reply_text(
             get_verify_usage_message("/verify5", "YouTube Student Premium")
         )
@@ -531,6 +595,139 @@ async def verify5_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db
             f"❌ An error occurred during processing: {str(e)}\n\n"
             f"{VERIFY_COST} points have been refunded"
         )
+
+
+async def verify6_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
+    """Handle the /verify6 command for Perplexity Pro Student."""
+    user_id = update.effective_user.id
+
+    if db.is_user_blocked(user_id):
+        await update.message.reply_text("You have been blocked and cannot use this feature.")
+        return
+
+    if not db.user_exists(user_id):
+        await update.message.reply_text("Please register first with /start.")
+        return
+
+    if not context.args:
+        set_pending(user_id, "verify6")
+        await update.message.reply_text(
+            "Perplexity Pro student verification\n\n"
+            "Use a Netherlands IP for best results.\n"
+            "Send your SheerID link within 5 minutes.\n"
+            "Example: https://services.sheerid.com/verify/<programId>/?verificationId=<id>"
+        )
+        return
+
+    clear_pending(user_id)
+
+    if not context.args:
+        await update.message.reply_text(
+            get_verify_usage_message("/verify6", "Perplexity Pro Student")
+        )
+        return
+
+    url = context.args[0]
+    user = db.get_user(user_id)
+    if user["balance"] < VERIFY_COST:
+        await update.message.reply_text(
+            get_insufficient_balance_message(user["balance"])
+        )
+        return
+
+    verification_id = PerplexityVerifier.parse_verification_id(url)
+    if not verification_id:
+        await update.message.reply_text("Invalid SheerID link. Please check and try again.")
+        return
+
+    if not db.deduct_balance(user_id, VERIFY_COST):
+        await update.message.reply_text("Failed to deduct points, please try again later.")
+        return
+
+    processing_msg = await update.message.reply_text(
+        f"🧠 Starting Perplexity Pro student verification...\n"
+        f"Deducted {VERIFY_COST} points\n\n"
+        "📝 Generating student information...\n"
+        "🎨 Generating document...\n"
+        "📤 Submitting to SheerID..."
+    )
+
+    semaphore = get_verification_semaphore("perplexity_student")
+
+    try:
+        async with semaphore:
+            verifier = PerplexityVerifier(url)
+            result = await asyncio.to_thread(verifier.verify)
+
+        db.add_verification(
+            user_id,
+            "perplexity_student",
+            url,
+            "success" if result["success"] else "failed",
+            str(result),
+        )
+
+        if result["success"]:
+            result_msg = "✅ Perplexity student verification submitted!\n\n"
+            if result.get("pending"):
+                result_msg += "✨ Documents submitted, awaiting SheerID review\n"
+                result_msg += "⏱️ Expected review time: a few minutes\n\n"
+            if result.get("redirect_url"):
+                result_msg += f"🔗 Redirect link:\n{result['redirect_url']}"
+            await processing_msg.edit_text(result_msg)
+        else:
+            db.add_balance(user_id, VERIFY_COST)
+            await processing_msg.edit_text(
+                f"❌ Verification failed: {result.get('message', 'Unknown error')}\n\n"
+                f"{VERIFY_COST} points have been refunded"
+            )
+    except Exception as e:
+        logger.error("Perplexity verification error: %s", e)
+        db.add_balance(user_id, VERIFY_COST)
+        await processing_msg.edit_text(
+            f"❌ An error occurred during processing: {str(e)}\n\n"
+            f"{VERIFY_COST} points have been refunded"
+        )
+
+
+async def handle_pending_url(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
+    """Handle plain text messages when a verification session is pending."""
+    user_id = update.effective_user.id
+    pending = get_pending(user_id)
+    if not pending:
+        return
+
+    if ttl_remaining(user_id) <= 0:
+        clear_pending(user_id)
+        await update.message.reply_text("Session expired. Please send the command again to start.")
+        return
+
+    command_key = pending.get("command")
+    url_text = (update.message.text or "").strip()
+    if not url_text:
+        await update.message.reply_text("Please send the verification link (session valid for 5 minutes).")
+        return
+
+    # Clear pending before processing to avoid reuse
+    clear_pending(user_id)
+
+    # Prepare argument for existing handlers
+    context.args = [url_text]
+
+    handlers = {
+        "verify": verify_command,
+        "verify2": verify2_command,
+        "verify3": verify3_command,
+        "verify4": verify4_command,
+        "verify5": verify5_command,
+        "verify6": verify6_command,
+    }
+
+    handler_fn = handlers.get(command_key)
+    if handler_fn:
+        await handler_fn(update, context, db)
+    else:
+        await update.message.reply_text("Unknown session. Please start again with a command like /verify.")
 
 
 async def getV4Code_command(update: Update, context: ContextTypes.DEFAULT_TYPE, db: Database):
