@@ -1,14 +1,14 @@
-# SheerID 验证配置文件
+# SheerID verification configuration file
 
-# SheerID API 配置
+# SheerID API settings
 PROGRAM_ID = '67c8c14f5f17a83b745e3f82'
 SHEERID_BASE_URL = 'https://services.sheerid.com'
 MY_SHEERID_URL = 'https://my.sheerid.com'
 
-# 文件大小限制
+# File size limit
 MAX_FILE_SIZE = 1 * 1024 * 1024  # 1MB
 
-# 学校配置 - Pennsylvania State University 多校区
+# School configuration - Pennsylvania State University campuses
 SCHOOLS = {
     '2565': {
         'id': 2565,
@@ -132,6 +132,5 @@ SCHOOLS = {
     }
 }
 
-# 默认学校
+# Default school
 DEFAULT_SCHOOL_ID = '2565'
-
