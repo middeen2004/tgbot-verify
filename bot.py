@@ -2,7 +2,7 @@
 import logging
 from functools import partial
 
-from telegram.ext import Application, CommandHandler
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
 
 from config import BOT_TOKEN
 from database_mysql import Database
@@ -10,6 +10,7 @@ from handlers.user_commands import (
     start_command,
     about_command,
     help_command,
+    service_command,
     balance_command,
     checkin_command,
     invite_command,
@@ -20,7 +21,9 @@ from handlers.verify_commands import (
     verify2_command,
     verify3_command,
     verify4_command,
+    verify6_command,
     getV4Code_command,
+    handle_pending_url,
 )
 from handlers.admin_commands import (
     addbalance_command,
@@ -62,6 +65,7 @@ def main():
     application.add_handler(CommandHandler("start", partial(start_command, db=db)))
     application.add_handler(CommandHandler("about", partial(about_command, db=db)))
     application.add_handler(CommandHandler("help", partial(help_command, db=db)))
+    application.add_handler(CommandHandler("service", partial(service_command, db=db)))
     application.add_handler(CommandHandler("balance", partial(balance_command, db=db)))
     application.add_handler(CommandHandler("qd", partial(checkin_command, db=db)))
     application.add_handler(CommandHandler("invite", partial(invite_command, db=db)))
@@ -72,7 +76,13 @@ def main():
     application.add_handler(CommandHandler("verify2", partial(verify2_command, db=db)))
     application.add_handler(CommandHandler("verify3", partial(verify3_command, db=db)))
     application.add_handler(CommandHandler("verify4", partial(verify4_command, db=db)))
+    application.add_handler(CommandHandler("verify6", partial(verify6_command, db=db)))
     application.add_handler(CommandHandler("getV4Code", partial(getV4Code_command, db=db)))
+
+    # Handle follow-up URLs during pending verification sessions
+    application.add_handler(
+        MessageHandler(filters.TEXT & (~filters.COMMAND), partial(handle_pending_url, db=db))
+    )
 
     # Register admin commands
     application.add_handler(CommandHandler("addbalance", partial(addbalance_command, db=db)))

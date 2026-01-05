@@ -6,7 +6,7 @@
 ![License](https://img.shields.io/github/license/PastKing/tgbot-verify)
 
 > 🤖 Automated SheerID Student/Teacher Verification Telegram Bot
-> 
+>
 > Based on [@auto_sheerid_bot](https://t.me/auto_sheerid_bot) GGBond's legacy code with improvements
 
 [English Documentation]
@@ -18,30 +18,33 @@
 A Python-based Telegram bot that automates SheerID student/teacher identity verification for multiple platforms. The bot automatically generates identity information, creates verification documents, and submits them to the SheerID platform, significantly simplifying the verification process.
 
 > **⚠️ Important Notice**:
-> 
+>
 > - Services such as **Gemini One Pro**, **ChatGPT Teacher K12**, **Spotify Student**, and **YouTube Premium Student** require updating verification data (e.g., `programId`) in each module's configuration file before use. Please refer to the "Must Read Before Use" section below for details.
 > - This project also provides implementation approach and API documentation for **ChatGPT Military verification**. For detailed information, please refer to [`military/README.md`](military/README.md). Users can integrate this based on the documentation.
 
 ### 🎯 Supported Services
 
-| Command | Service | Type | Status | Description |
-|---------|---------|------|--------|-------------|
-| `/verify` | Gemini One Pro | Teacher | ✅ Complete | Google AI Studio Education Discount |
-| `/verify2` | ChatGPT Teacher K12 | Teacher | ✅ Complete | OpenAI ChatGPT Education Discount |
-| `/verify3` | Spotify Student | Student | ✅ Complete | Spotify Student Subscription Discount |
-| `/verify4` | Bolt.new Teacher | Teacher | ✅ Complete | Bolt.new Education Discount (Auto code retrieval) |
-| `/verify5` | YouTube Premium Student | Student | ⚠️ Beta | YouTube Premium Student Discount (See notes below) |
+| Command    | Service                 | Type    | Status      | Description                                         |
+| ---------- | ----------------------- | ------- | ----------- | --------------------------------------------------- |
+| `/verify`  | Gemini One Pro          | Teacher | ✅ Complete | Google AI Studio Education Discount                 |
+| `/verify2` | ChatGPT Teacher K12     | Teacher | ✅ Complete | OpenAI ChatGPT Education Discount                   |
+| `/verify3` | Spotify Student         | Student | ✅ Complete | Spotify Student Subscription Discount               |
+| `/verify4` | Bolt.new Teacher        | Teacher | ✅ Complete | Bolt.new Education Discount (Auto code retrieval)   |
+| `/verify5` | YouTube Premium Student | Student | ⚠️ Beta     | YouTube Premium Student Discount (See notes below)  |
+| `/verify6` | Perplexity Pro          | Student | ✅ Complete | Perplexity Pro Student Discount (NL IP recommended) |
 
 > **⚠️ YouTube Verification Special Notes**:
-> 
+>
 > YouTube verification is currently in beta status. Please carefully read [`youtube/HELP.MD`](youtube/HELP.MD) before use.
-> 
+>
 > **Key Differences**:
+>
 > - YouTube's original link format differs from other services
 > - Requires manual extraction of `programId` and `verificationId` from browser network logs
 > - Must manually construct standard SheerID link format
-> 
+>
 > **Usage Steps**:
+>
 > 1. Visit YouTube Premium student verification page
 > 2. Open browser DevTools (F12) → Network tab
 > 3. Start verification process, search for `https://services.sheerid.com/rest/v2/verification/`
@@ -50,7 +53,7 @@ A Python-based Telegram bot that automates SheerID student/teacher identity veri
 > 6. Submit the link using `/verify5` command
 
 > **💡 ChatGPT Military Verification Approach**:
-> 
+>
 > This project provides implementation approach and API documentation for ChatGPT Military SheerID verification. The military verification process differs from regular student/teacher verification, requiring an initial `collectMilitaryStatus` API call to set military status before submitting personal information. For detailed implementation approach and API documentation, please refer to [`military/README.md`](military/README.md). Users can integrate this into the bot based on the documentation.
 
 ### ✨ Key Features
@@ -167,6 +170,7 @@ docker run -d \
 /verify3 <link>     # Spotify Student verification
 /verify4 <link>     # Bolt.new Teacher verification
 /verify5 <link>     # YouTube Premium Student verification
+/verify6 <link>     # Perplexity Pro student verification
 /getV4Code <id>     # Get Bolt.new verification code
 /help               # View help information
 ```
@@ -186,16 +190,19 @@ docker run -d \
 ### Verification Process
 
 1. **Get Verification Link**
+
    - Visit the corresponding service's verification page
    - Start the verification process
    - Copy the full URL from browser address bar (including `verificationId`)
 
 2. **Submit Verification Request**
+
    ```
    /verify3 https://services.sheerid.com/verify/xxx/?verificationId=yyy
    ```
 
 3. **Wait for Processing**
+
    - Bot automatically generates identity information
    - Creates student/teacher ID image
    - Submits to SheerID platform
@@ -240,17 +247,17 @@ tgbot-verify/
 
 ### Environment Variables
 
-| Variable | Required | Description | Default |
-|----------|----------|-------------|---------|
-| `BOT_TOKEN` | ✅ | Telegram Bot Token | - |
-| `CHANNEL_USERNAME` | ❌ | Channel username | pk_oa |
-| `CHANNEL_URL` | ❌ | Channel link | https://t.me/pk_oa |
-| `ADMIN_USER_ID` | ✅ | Admin Telegram ID | - |
-| `MYSQL_HOST` | ✅ | MySQL host address | localhost |
-| `MYSQL_PORT` | ❌ | MySQL port | 3306 |
-| `MYSQL_USER` | ✅ | MySQL username | - |
-| `MYSQL_PASSWORD` | ✅ | MySQL password | - |
-| `MYSQL_DATABASE` | ✅ | Database name | tgbot_verify |
+| Variable           | Required | Description        | Default            |
+| ------------------ | -------- | ------------------ | ------------------ |
+| `BOT_TOKEN`        | ✅       | Telegram Bot Token | -                  |
+| `CHANNEL_USERNAME` | ❌       | Channel username   | pk_oa              |
+| `CHANNEL_URL`      | ❌       | Channel link       | https://t.me/pk_oa |
+| `ADMIN_USER_ID`    | ✅       | Admin Telegram ID  | -                  |
+| `MYSQL_HOST`       | ✅       | MySQL host address | localhost          |
+| `MYSQL_PORT`       | ❌       | MySQL port         | 3306               |
+| `MYSQL_USER`       | ✅       | MySQL username     | -                  |
+| `MYSQL_PASSWORD`   | ✅       | MySQL password     | -                  |
+| `MYSQL_DATABASE`   | ✅       | Database name      | tgbot_verify       |
 
 ### Points Configuration
 
@@ -280,6 +287,7 @@ Since SheerID platform's `programId` may be updated periodically, the following 
 - `Boltnew/config.py` - Bolt.new Teacher verification (recommended to check `PROGRAM_ID`)
 
 **How to get the latest programId**:
+
 1. Visit the corresponding service's verification page
 2. Open browser DevTools (F12) → Network tab
 3. Start the verification process
@@ -304,10 +312,12 @@ Since SheerID platform's `programId` may be updated periodically, the following 
 Secondary development is welcome! Please follow these rules:
 
 1. **Preserve Original Author Info**
+
    - Keep original repository address in code and documentation
    - Note that it's based on this project
 
 2. **Open Source License**
+
    - This project uses MIT License
    - Secondary development projects must also be open source
 
